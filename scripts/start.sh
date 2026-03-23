@@ -1,10 +1,10 @@
 #!/bin/bash
-# scripts/start.sh — 大龙虾容器启动脚本
+# scripts/start.sh — ClawBox 容器启动脚本
 # 职责：初始化运行时目录 + 种子配置 + 前端构建 → 启动 supervisord
 
 set -e
 
-echo "=== 大龙虾 (Dalongxia) 容器启动 ==="
+echo "=== ClawBox 容器启动 ==="
 
 # ── OpenClaw 初始化 ──
 export OPENCLAW_HOME=/app/openclaw-home
@@ -18,7 +18,7 @@ mkdir -p /app/config
 # 如果配置文件不存在或格式错误，从种子配置复制
 if [ ! -f "$OPENCLAW_CONFIG_PATH" ]; then
     cp /app/seeds/openclaw.json "$OPENCLAW_CONFIG_PATH"
-    echo "=== 大龙虾：已写入 OpenClaw 种子配置 ==="
+    echo "=== ClawBox：已写入 OpenClaw 种子配置 ==="
 else
     # 检查配置文件 JSON 格式是否有效（不用 openclaw doctor，它在初始化阶段不可靠）
     if ! python3 -c "import json; json.load(open('$OPENCLAW_CONFIG_PATH'))" 2>/dev/null; then
@@ -62,9 +62,10 @@ fi
 if [ ! -f /app/static/index.html ]; then
     echo "前端静态文件不存在，开始构建..."
     cd /app/frontend
+    export VITE_OUT_DIR=/app/static
     npm ci --silent 2>/dev/null || npm install --silent
     npm run build --silent
-    echo "=== 大龙虾：前端构建完成 ==="
+    echo "=== ClawBox：前端构建完成 ==="
 fi
 
 # ── OpenClaw Skills 预装（仅首次，后台运行不阻塞） ──
@@ -83,4 +84,4 @@ fi
 
 # ── 启动 supervisord ──
 echo "启动 supervisord..."
-exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/dalongxia.conf
+exec /usr/bin/supervisord -n -c /etc/supervisor/conf.d/clawbox.conf

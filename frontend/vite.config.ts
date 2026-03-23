@@ -16,7 +16,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: resolve(__dirname, '../app/static'),
+    outDir: process.env.VITE_OUT_DIR || resolve(__dirname, '../app/static'),
     emptyOutDir: true,
   },
   server: {
