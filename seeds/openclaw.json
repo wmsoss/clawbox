@@ -1,0 +1,80 @@
+{
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "bailian": {
+        "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "apiKey": "${DASHSCOPE_API_KEY:-}",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "qwen3.5-plus",
+            "name": "Qwen3.5-Plus"
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "bailian/qwen3.5-plus"
+      },
+      "models": {
+        "bailian/qwen3.5-plus": {}
+      },
+      "workspace": "/app/openclaw-home/workspace"
+    }
+  },
+  "tools": {
+    "allow": ["group:all"],
+    "exec": {
+      "host": "gateway",
+      "security": "full",
+      "ask": "off"
+    }
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "session-memory": { "enabled": true },
+        "command-logger": { "enabled": true },
+        "boot-md": { "enabled": true }
+      }
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "lan",
+    "controlUi": {
+      "allowedOrigins": [
+        "http://localhost:18789",
+        "http://127.0.0.1:18789"
+      ],
+      "dangerouslyDisableDeviceAuth": true,
+      "allowInsecureAuth": true
+    },
+    "auth": {
+      "mode": "password",
+      "password": "dalongxia-2026"
+    }
+  },
+  "skills": {
+    "install": { "nodeManager": "npm" },
+    "entries": {
+      "safe-exec": { "enabled": true },
+      "computer-use": { "enabled": true },
+      "clawdbot-filesystem": { "enabled": true }
+    }
+  }
+}

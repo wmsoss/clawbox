@@ -1,0 +1,32 @@
+# docker-compose.yml — ClawBox 一键启动配置
+# 用法: docker compose up -d
+
+services:
+  clawbox:
+    image: clawbox-image:latest
+    container_name: clawbox
+    shm_size: "2gb"                          # Chrome 渲染必须
+    mem_limit: "6g"                          # 内存上限
+    env_file: .env                           # 凭证注入 → supervisord %(ENV_*)s
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:////app/db/clawbox.sqlite
+    ports:
+      - "8000:8000"   # FastAPI 控制面 + 前端页面
+      - "6080:6080"   # noVNC Web 桌面
+      - "18789:18789" # OpenClaw Gateway Web UI
+    volumes:
+      - ./backend:/app/backend               # 后端代码映射 (无需 rebuild)
+      - ./frontend:/app/frontend             # 前端代码映射 (无需 rebuild)
+      - ./docker/supervisord.conf:/etc/supervisor/conf.d/clawbox.conf  # supervisord 配置映射
+      - ./scripts/start.sh:/start.sh         # 启动脚本映射
+      - ./seeds:/app/seeds                   # 种子配置映射
+      - ./app/static:/app/static             # 前端构建产物映射
+      - ./app/db:/app/db                     # SQLite 持久化
+      - ./app/config:/app/config             # singbox.json / openclaw.json 持久化
+      - ./app/skills:/app/skills             # OpenClaw Skills 持久化
+      - ./app/openclaw-home:/app/openclaw-home  # OpenClaw workspace/state 持久化
+      - node_modules:/app/openclaw-home/node_modules  # npm 全局包缓存
+    restart: unless-stopped
+
+volumes:
+  node_modules:

@@ -1,0 +1,91 @@
+# docker/Dockerfile.base — 大龙虾基础镜像
+# 按白皮书 §10 构建: OS + 系统依赖 + 运行时环境
+# 应用层在 Dockerfile.app 中处理
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Shanghai
+ENV DISPLAY=:99
+ENV HOME=/root
+
+# ── 1. 替换为阿里云镜像源 + 系统包
+RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list.d/ubuntu.sources && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    supervisor xvfb x11vnc xfce4 xfce4-terminal \
+    curl wget git unzip gnupg ca-certificates \
+    fonts-wqy-zenhei fonts-noto-cjk \
+    dbus-x11 at-spi2-core \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ── 1b. 从 apt 安装 supervisor（避免 pip 安装与 Python 3.13 的 setuptools 冲突）
+# Ubuntu 24.04 的 supervisor 版本为 4.2.5，已兼容 pkg_resources
+# 同时安装 python3-setuptools 确保 pkg_resources 可用
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-setuptools \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ── 2. Sing-box (dpkg-deb 提取，官方 .deb postinst 依赖 systemd 在 Docker 中不可用)
+RUN ARCH="amd64" && \
+    VERSION=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest \
+        | grep tag_name | cut -d '"' -f4 | sed 's/v//') && \
+    curl -Lo /tmp/sing-box.deb \
+        "https://github.com/SagerNet/sing-box/releases/download/v${VERSION}/sing-box_${VERSION}_linux_${ARCH}.deb" && \
+    dpkg-deb -x /tmp/sing-box.deb / && \
+    rm /tmp/sing-box.deb && \
+    sing-box version
+
+# ── 3. Miniforge3 (Python 环境)
+RUN wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh" \
+    -O /tmp/miniforge.sh && \
+    bash /tmp/miniforge.sh -b -p /opt/miniforge && \
+    rm /tmp/miniforge.sh
+ENV PATH="/opt/miniforge/bin:$PATH"
+RUN conda config --set channel_priority strict && \
+    conda config --add channels conda-forge
+
+# ── 4. Node.js via fnm (Node 24 LTS — OpenClaw 2026.3.12+ 需要 Node.js 22+)
+# 使用最新 LTS 版本，确保兼容 OpenClaw 和 ClawHub
+RUN curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir "/opt/fnm" --skip-shell && \
+    ln -s /opt/fnm/fnm /usr/local/bin/fnm
+ENV FNM_DIR="/opt/fnm"
+RUN fnm install 24 && fnm default 24
+ENV PATH="/opt/fnm/aliases/default/bin:$PATH"
+RUN npm config set registry https://registry.npmmirror.com
+
+# ── 5. Google Chrome (稳定版)
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | \
+    gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
+    > /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && apt-get install -y google-chrome-stable --no-install-recommends && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ── 6. noVNC + websockify
+RUN git clone --depth=1 https://github.com/novnc/noVNC.git /opt/novnc && \
+    git clone --depth=1 https://github.com/novnc/websockify.git /opt/novnc/utils/websockify
+
+# ── 7. Python 系统级依赖 (应用依赖在 Dockerfile.app 安装)
+# fastapi + uvicorn: supervisord 管理的系统进程，需在基础镜像中可用
+# setuptools<70: Python 3.13 的 setuptools 移除了 pkg_resources，需安装旧版
+RUN pip install --no-cache-dir \
+    'setuptools<70' \
+    ptyprocess \
+    psutil \
+    aiofiles \
+    pyyaml \
+    fastapi \
+    "uvicorn[standard]"
+
+# ── 8. 创建运行时目录
+RUN mkdir -p /app/config /app/db /app/workspace/chrome_profile /app/skills /var/log/supervisor
+
+# ── 9. 复制后端 stub + supervisord 配置 + 启动脚本
+COPY backend/ /app/backend/
+COPY docker/supervisord.conf /etc/supervisor/conf.d/dalongxia.conf
+COPY scripts/start.sh /start.sh
+RUN chmod +x /start.sh
+
+EXPOSE 8000 6080 5900
+
+CMD ["/start.sh"]

@@ -1,0 +1,32 @@
+# 大龙虾 (Dalongxia) Git 行尾配置
+# 确保 shell 脚本和 Docker 文件始终保持 Unix LF 行尾
+
+# 默认使用 native 行尾（Windows 上 CRLF，Linux 上 LF）
+* text=auto
+
+# Shell 脚本 - 始终使用 LF
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Docker 相关文件 - 始终使用 LF
+Dockerfile* text eol=lf
+docker-compose*.yml text eol=lf
+
+# Python 文件 - 始终使用 LF（避免跨平台问题）
+*.py text eol=lf
+
+# 配置文件 - 始终使用 LF
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+
+# 二进制文件 - 不转换
+*.exe binary
+*.dll binary
+*.zip binary
+*.tar.gz binary
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary

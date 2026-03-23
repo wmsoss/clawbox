@@ -1,0 +1,63 @@
+# 凭证和敏感文件（绝对不进 Git）
+.env
+*.env.local
+
+# 运行时生成文件
+app/config/openclaw.json
+app/config/singbox.json
+app/config/*.json
+app/config/*.tmp
+app/db/*.sqlite
+app/db/backup_*.sqlite
+app/workspace/chrome_profile/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# Node / Vue 前端
+node_modules/
+frontend/dist/
+frontend/.vite/
+# app/static/ 由前端构建生成，打包前需执行 npm run build
+app/static/assets/*.js
+app/static/assets/*.css
+app/static/assets/*.woff2
+app/static/assets/*.ttf
+
+# Docker
+.docker/
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# 日志
+*.log
+logs/
+
+# macOS
+.DS_Store
+
+# 构建产物
+dist/
+build/
+code/
+installer/
+launcher-package/
+*.spec
+
+# OpenClaw 运行时数据
+app/openclaw-home/
+app/skills/
+
+# 前端缓存
+frontend/cache.db
+
+# 配置备份
+app/config/openclaw.json.bak*

@@ -1,0 +1,44 @@
+# backend/requirements.txt — Python 应用层依赖
+# 按白皮书 §10 在 Dockerfile.app 中安装
+
+# ── Web 框架 ────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.30.0
+
+# ── 数据库 ──────────────────────────────────────────
+sqlalchemy==2.0.31
+aiosqlite==0.20.0
+greenlet==3.1.1  # SQLAlchemy 异步模式必需
+
+# ── 配置与验证 ──────────────────────────────────────
+pydantic-settings==2.3.0
+python-dotenv==1.0.0  # .env 文件加载支持
+
+# ── 安全认证 ────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt<5  # passlib 与 bcrypt 5.x 不兼容
+
+# ── HTTP 客户端 ─────────────────────────────────────
+httpx==0.27.0
+# aiohttp==3.9.5  # 移除：需要 Rust 编译环境
+tenacity==8.3.0  # 重试机制，网络请求更稳定
+
+# ── 文件与数据 ──────────────────────────────────────
+aiofiles==23.2.1
+pyyaml==6.0.1
+# orjson==3.10.3  # 移除：需要 Rust 编译环境
+
+# ── 系统工具 ────────────────────────────────────────
+ptyprocess==0.7.0  # PTY 支持
+psutil==5.9.8  # 系统监控
+watchdog==4.0.0  # 文件监控，支持热重载
+
+# ── 开发调试（生产环境可选）────────────────────────
+rich==13.7.1  # 彩色终端输出
+loguru==0.7.2  # 更好的日志库
+
+# ── 说明 ────────────────────────────────────────────
+# supervisor 和 setuptools 已在 Dockerfile.base 中通过 apt 安装
+# supervisor==4.2.5  # 已改为 apt install supervisor（系统包版本）
+# setuptools>=70.0.0  # 已改为 pip install setuptools（提供 pkg_resources）
