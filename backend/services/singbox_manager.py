@@ -93,17 +93,14 @@ def parse_vless_uri(uri: str) -> dict:
     return outbound
 
 
-def get_fallback_outbound() -> dict:
+def get_fallback_outbound() -> dict | None:
     """
     从 SINGBOX_FALLBACK_URI 读取兜底节点。
-    URI 为空时抛出明确错误，容器启动时即可发现配置缺失。
+    开源版不强制要求，URI 为空时返回 None。
     """
     uri = settings.singbox_fallback_uri
     if not uri:
-        raise RuntimeError(
-            "环境变量 SINGBOX_FALLBACK_URI 未设置。"
-            "请在 .env 中填入完整的 vless:// share-link URI。"
-        )
+        return None
     return parse_vless_uri(uri)
 
 

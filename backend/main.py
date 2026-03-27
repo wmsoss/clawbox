@@ -35,6 +35,16 @@ app.include_router(auth.router)
 app.include_router(network.router)
 app.include_router(system.router)
 
+# CORS — 允许 Tauri WebView 和本地开发访问
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/api/health")
 async def health_check():
     """健康检查端点，供 Docker healthcheck 和前端使用"""
@@ -50,7 +60,9 @@ else:
     frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 if frontend_dist.exists():
-    app.mount("/assets", StaticFiles(directory=frontend_dist / "assets"), name="assets")
+    assets_dir = frontend_dist / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
     
     # 因为 Vue router 使用 HTML5 History 模式，任何非 /api 且未命中的路径都应该返回 index.html
     @app.get("/{full_path:path}")

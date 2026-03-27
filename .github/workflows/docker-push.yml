@@ -1,0 +1,58 @@
+# CI/CD: 构建并推送 Docker 镜像到 DockerHub
+# 触发条件: 推送 tag v* 到 main 分支
+
+name: Docker Build & Push
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: womso/clawbox
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+            echo "has_version=true" >> $GITHUB_OUTPUT
+          else
+            echo "version=latest" >> $GITHUB_OUTPUT
+            echo "has_version=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push (amd64)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.app
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ steps.version.outputs.has_version == 'true' && format('{0}:{1}', env.IMAGE_NAME, steps.version.outputs.version) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # TODO: 后续添加 arm64 支持
+      # - name: Set up QEMU
+      #   uses: docker/setup-qemu-action@v3
+      # 然后在 platforms 加上 linux/arm64

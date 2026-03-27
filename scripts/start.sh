@@ -13,6 +13,7 @@ export OPENCLAW_CONFIG_PATH=/app/config/openclaw.json
 # 创建必要目录
 mkdir -p "$OPENCLAW_HOME/workspace" "$OPENCLAW_HOME/state"
 mkdir -p /app/config
+mkdir -p /app/static/assets
 
 # 写入种子配置（仅首次，不覆盖已有配置）
 # 如果配置文件不存在或格式错误，从种子配置复制

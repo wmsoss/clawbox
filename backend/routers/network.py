@@ -45,18 +45,21 @@ async def apply_network_config(
                 # nodes 保持为空数组，后续配置生成将仅使用 fallback_node。
                 log.warning(f"Failed to fetch subscription, falling back to built-in node: {e}")
         
-        # 获取系统兜底节点
+        # 获取系统兜底节点（开源版可能为 None）
         fallback_node = get_fallback_outbound()
         
-        # 组装 config.json
-        config = parser.build_singbox_config(
-            nodes=nodes,
-            fallback_node=fallback_node,
-            dns_china_direct=dto.useChinaDirect
-        )
-        
-        # 应用并重启由于禁止降级，抛出的任何异常(比如supervisorctl找不到)都会直接引发500
-        await manager.apply_config(config)
+        # 如果没有订阅节点也没有兜底节点，跳过 singbox 配置（直连模式）
+        if not nodes and not fallback_node:
+            log.info("No subscription and no fallback node — using direct connection mode")
+        else:
+            # 组装 config.json
+            config = parser.build_singbox_config(
+                nodes=nodes,
+                fallback_node=fallback_node,
+                dns_china_direct=dto.useChinaDirect
+            )
+            # 应用并重启
+            await manager.apply_config(config)
 
         # 更新数据库状态
         result = await db.execute(select(SetupState))
@@ -102,7 +105,7 @@ async def test_subscription(
         log.exception("Failed to test subscription")
         raise HTTPException(
             status_code=500, 
-            detail=f"测速失败: {str(e)}。您可以直接点击下一步，系统将自动使用内置兜底节点。"
+            detail=f"测速失败: {str(e)}。您可以直接点击下一步跳过此步骤。"
         )
 
 
