@@ -157,10 +157,6 @@ function App() {
     env.image_loaded &&
     env.code_extracted;
 
-  function handleEnvCheckNext() {
-    if (allReady) setPhase("env-config");
-  }
-
   // Auto-advance when env is ready (only if user is currently on env-check)
   useEffect(() => {
     if (phase === "env-check" && initialPhaseRef.current === "env-check" && allReady && !loading) {

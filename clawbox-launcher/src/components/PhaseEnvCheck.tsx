@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { CheckCircle2, XCircle, Loader2, RefreshCw, ShieldAlert, ShieldCheck, Download, CloudDownload, FolderSearch, FolderOpen } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import type { EnvStatus, SystemInfo, ActionResult } from "../types";

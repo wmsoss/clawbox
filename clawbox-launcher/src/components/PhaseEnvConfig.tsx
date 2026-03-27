@@ -30,7 +30,6 @@ const envFields = [
 export default function PhaseEnvConfig({ installDir, setInstallDir, addLog, onSaved }: Props) {
   const [envData, setEnvData] = useState<EnvData>({});
   const [helpKey, setHelpKey] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     loadEnv();
@@ -50,7 +49,6 @@ export default function PhaseEnvConfig({ installDir, setInstallDir, addLog, onSa
     } catch (e) {
       addLog(`读取 .env: ${e}`);
     }
-    setLoaded(true);
   }
 
   async function saveEnv() {
