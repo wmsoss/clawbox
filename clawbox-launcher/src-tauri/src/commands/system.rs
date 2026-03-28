@@ -1,4 +1,15 @@
 use serde::Serialize;
+use std::process::Command;
+
+fn new_command(program: &str) -> Command {
+    let mut cmd = Command::new(program);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+    cmd
+}
 
 #[derive(Serialize)]
 pub struct SystemInfo {
@@ -21,7 +32,7 @@ pub fn is_admin() -> bool {
     #[cfg(target_os = "windows")]
     {
         // Check via `net session` — succeeds only if admin
-        std::process::Command::new("net")
+        new_command("net")
             .arg("session")
             .output()
             .map(|o| o.status.success())
@@ -30,7 +41,7 @@ pub fn is_admin() -> bool {
     #[cfg(not(target_os = "windows"))]
     {
         // Unix: check if running as root via `id -u`
-        std::process::Command::new("id")
+        new_command("id")
             .arg("-u")
             .output()
             .map(|o| String::from_utf8_lossy(&o.stdout).trim() == "0")
@@ -43,7 +54,7 @@ pub fn run_as_admin() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-        std::process::Command::new("powershell")
+        new_command("powershell")
             .args([
                 "-Command",
                 &format!(

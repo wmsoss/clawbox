@@ -122,14 +122,6 @@ function App() {
         setStatus("请先安装 Docker");
       } else if (!result.docker_running) {
         setStatus("请启动 Docker");
-        addLog("Docker 已安装但未运行，尝试启动...");
-        const startResult = await invoke<{ success: boolean; message: string }>("start_docker_desktop");
-        addLog(startResult.message);
-        if (startResult.success) {
-          scanningRef.current = false;
-          setTimeout(checkEnv, 5000);
-          return;
-        }
       } else if (allOk) {
         setStatus("环境就绪");
       } else {

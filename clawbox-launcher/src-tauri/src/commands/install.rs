@@ -1,5 +1,25 @@
-use std::process::Command;
 use serde::Serialize;
+use std::process::Command;
+
+fn new_command(program: &str) -> Command {
+    let mut cmd = Command::new(program);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+    cmd
+}
+
+fn new_tokio_command(program: &str) -> tokio::process::Command {
+    let mut std_cmd = Command::new(program);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        std_cmd.creation_flags(0x08000000);
+    }
+    tokio::process::Command::from(std_cmd)
+}
 
 #[derive(Serialize)]
 pub struct InstallResult {
@@ -13,15 +33,11 @@ pub struct InstallResult {
 pub fn handle_wsl2_install() -> InstallResult {
     #[cfg(target_os = "windows")]
     {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-
-        let result = Command::new("powershell")
+        let result = new_command("powershell")
             .args([
                 "-Command",
-                "Start-Process wsl.exe -ArgumentList '--install --no-distribution' -Verb RunAs -Wait",
+                "Start-Process wsl.exe -ArgumentList '--install --no-distribution' -Verb RunAs -Wait -WindowStyle Hidden",
             ])
-            .creation_flags(CREATE_NO_WINDOW)
             .output();
 
         match result {
@@ -106,7 +122,7 @@ pub fn start_docker_desktop() -> InstallResult {
 
         for p in &paths {
             if std::path::Path::new(p).exists() {
-                match Command::new(p).spawn() {
+                match new_command(p).spawn() {
                     Ok(_) => {
                         return InstallResult {
                             success: true,
@@ -132,7 +148,7 @@ pub fn start_docker_desktop() -> InstallResult {
     #[cfg(target_os = "macos")]
     {
         // Try OrbStack first, then Docker Desktop
-        if let Ok(o) = Command::new("open").args(["-a", "OrbStack"]).output() {
+        if let Ok(o) = new_command("open").args(["-a", "OrbStack"]).output() {
             if o.status.success() {
                 return InstallResult {
                     success: true,
@@ -141,7 +157,7 @@ pub fn start_docker_desktop() -> InstallResult {
             }
         }
         // Fallback to Docker Desktop
-        let _ = Command::new("open").args(["-a", "Docker"]).spawn();
+        let _ = new_command("open").args(["-a", "Docker"]).spawn();
         return InstallResult {
             success: true,
             message: "Docker Desktop 启动中...".to_string(),
@@ -150,7 +166,7 @@ pub fn start_docker_desktop() -> InstallResult {
 
     #[cfg(target_os = "linux")]
     {
-        let result = Command::new("systemctl")
+        let result = new_command("systemctl")
             .args(["start", "docker"])
             .output();
         return match result {
@@ -212,7 +228,7 @@ pub fn load_image(tar_path: &str) -> InstallResult {
         }
     };
 
-    match Command::new("docker")
+    match new_command("docker")
         .arg("load")
         .stdin(file)
         .output()
@@ -245,7 +261,7 @@ pub async fn pull_image(image_name: String) -> InstallResult {
     ];
 
     for (source, label) in &sources {
-        let result = tokio::process::Command::new("docker")
+        let result = new_tokio_command("docker")
             .args(["pull", source])
             .output()
             .await;
@@ -253,7 +269,7 @@ pub async fn pull_image(image_name: String) -> InstallResult {
         match result {
             Ok(o) if o.status.success() => {
                 // Tag as the canonical local name
-                let _ = tokio::process::Command::new("docker")
+                let _ = new_tokio_command("docker")
                     .args(["tag", source, &image_name])
                     .output()
                     .await;

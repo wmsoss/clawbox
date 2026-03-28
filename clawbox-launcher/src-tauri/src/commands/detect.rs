@@ -12,11 +12,21 @@ pub struct EnvStatus {
     pub path_issues: Vec<String>,
 }
 
+fn new_command(program: &str) -> Command {
+    let mut cmd = Command::new(program);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+    cmd
+}
+
 #[tauri::command]
 pub fn check_wsl2() -> bool {
     #[cfg(target_os = "windows")]
     {
-        Command::new("wsl")
+        new_command("wsl")
             .args(["--list", "--verbose"])
             .output()
             .map(|o| o.status.success())
@@ -30,7 +40,7 @@ pub fn check_wsl2() -> bool {
 
 #[tauri::command]
 pub fn check_docker() -> bool {
-    Command::new("docker")
+    new_command("docker")
         .arg("--version")
         .output()
         .map(|o| o.status.success())
@@ -39,7 +49,7 @@ pub fn check_docker() -> bool {
 
 #[tauri::command]
 pub fn check_docker_running() -> bool {
-    Command::new("docker")
+    new_command("docker")
         .arg("info")
         .output()
         .map(|o| o.status.success())
@@ -48,7 +58,7 @@ pub fn check_docker_running() -> bool {
 
 #[tauri::command]
 pub fn check_image(image_name: &str) -> bool {
-    Command::new("docker")
+    new_command("docker")
         .args(["images", "-q", image_name])
         .output()
         .map(|o| o.status.success() && !o.stdout.is_empty())
@@ -71,7 +81,7 @@ pub fn check_code(install_dir: &str) -> bool {
 
 #[tauri::command]
 pub fn check_container(container_name: &str) -> bool {
-    Command::new("docker")
+    new_command("docker")
         .args([
             "ps",
             "--filter",

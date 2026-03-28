@@ -23,15 +23,30 @@ ClawBox 是一个面向 AI 自动化爱好者的 **一键部署面板**，将 [O
 - 🌐 **noVNC 远程桌面** — 在浏览器中观看 AI 操控 Chrome 浏览器
 - 📟 **Web 终端** — 在线 xterm.js 终端，直接操作容器
 - 🛡️ **网络隔离** — Sing-box 路由管理，保护你的真实 IP
+- 🚀 **桌面版启动器** — 提供 Windows/macOS/Linux 跨平台 GUI 客户端，一键配置拉取极速上手
 - 🔒 **开源透明** — 代码完全公开，不窃取任何 API Key 或凭证
 
 ### 快速开始
 
 #### 前置要求
 - Docker Desktop（Windows/macOS）或 Docker Engine（Linux）
+- WSL2（仅 Windows 平台需要）
 - 4GB+ 可用内存
 
-#### 一键启动
+#### 选项一：使用桌面启动器（推荐）
+
+ClawBox 提供跨平台桌面客户端，带有全自动环境检测、一键镜像拉取、代码下载及启动向导。
+
+1. 前往 [Releases](https://github.com/wmsoss/clawbox/releases) 页面下载对应系统的安装包（Windows 即选 `.exe`，macOS 选 `.dmg`）
+2. 打开 ClawBox Launcher，跟随向导完成运行环境配置：
+   
+   ![环境检测向导](docs/images/launcher/step_env.png)
+
+3. 在可视化向导中配置网络与大模型 API Key 即可极速启动。
+
+   ![主控台一览](docs/images/launcher/dashboard.png)
+
+#### 选项二：命令行一键启动
 
 ```bash
 # 1. 克隆仓库
