@@ -12,6 +12,7 @@ import WizardStep1Network from "./components/WizardStep1Network";
 import WizardStep2LLM from "./components/WizardStep2LLM";
 import WizardStep3Finish from "./components/WizardStep3Finish";
 import PhaseDashboard from "./components/PhaseDashboard";
+import AutoUpdater from "./components/AutoUpdater";
 
 type Phase = "env-check" | "env-config" | "docker-up" | "wizard" | "dashboard";
 
@@ -162,6 +163,9 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* Auto Update Check */}
+      <AutoUpdater />
+
       {/* Header — hidden in dashboard mode */}
       {!showDashboard && (
         <>

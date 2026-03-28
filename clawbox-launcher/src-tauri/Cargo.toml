@@ -26,6 +26,7 @@ open = "5"
 zip = "2"
 url = "2"
 tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 rfd = "0.15"
 tokio = { version = "1", features = ["process", "time", "fs"] }
 reqwest = { version = "0.12", features = ["rustls-tls"], default-features = false }

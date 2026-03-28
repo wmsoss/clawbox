@@ -608,3 +608,83 @@ select.neu-input {
 :root { --orange: #dd6b20; }
 [data-theme="dark"] { --orange: #f6ad55; }
 
+/* ── Auto Update Banner ── */
+.update-banner {
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  border-radius: 12px;
+  padding: 2px;
+  animation: slideDown 0.4s ease-out;
+  box-shadow:
+    4px 4px 12px var(--shadow-dark),
+    -4px -4px 12px var(--shadow-lite);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.update-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--card);
+  gap: 12px;
+}
+
+.update-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text1);
+}
+
+.update-icon {
+  color: var(--accent);
+  animation: spin 3s linear infinite;
+}
+
+.update-banner-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.update-btn-primary {
+  background: var(--accent) !important;
+  color: var(--btn-fg) !important;
+}
+
+.update-btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover) !important;
+}
+
+.update-progress-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.update-status {
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.update-progress-bar {
+  height: 4px;
+  background: var(--card-hi);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.update-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
