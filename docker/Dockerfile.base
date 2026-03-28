@@ -3,6 +3,7 @@
 # 应用层在 Dockerfile.app 中处理
 
 FROM ubuntu:24.04
+ARG TARGETARCH
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Shanghai
@@ -26,17 +27,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ── 2. Sing-box (dpkg-deb 提取，官方 .deb postinst 依赖 systemd 在 Docker 中不可用)
-RUN ARCH="amd64" && \
-    VERSION=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest \
+RUN VERSION=$(curl -s https://api.github.com/repos/SagerNet/sing-box/releases/latest \
         | grep tag_name | cut -d '"' -f4 | sed 's/v//') && \
     curl -Lo /tmp/sing-box.deb \
-        "https://github.com/SagerNet/sing-box/releases/download/v${VERSION}/sing-box_${VERSION}_linux_${ARCH}.deb" && \
+        "https://github.com/SagerNet/sing-box/releases/download/v${VERSION}/sing-box_${VERSION}_linux_${TARGETARCH}.deb" && \
     dpkg-deb -x /tmp/sing-box.deb / && \
     rm /tmp/sing-box.deb && \
     sing-box version
 
 # ── 3. Miniforge3 (Python 环境)
-RUN wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh" \
+RUN if [ "$TARGETARCH" = "arm64" ]; then MF_ARCH="aarch64"; else MF_ARCH="x86_64"; fi && \
+    wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${MF_ARCH}.sh" \
     -O /tmp/miniforge.sh && \
     bash /tmp/miniforge.sh -b -p /opt/miniforge && \
     rm /tmp/miniforge.sh
@@ -53,13 +54,19 @@ RUN fnm install 24 && fnm default 24
 ENV PATH="/opt/fnm/aliases/default/bin:$PATH"
 RUN npm config set registry https://registry.npmmirror.com
 
-# ── 5. Google Chrome (稳定版)
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | \
-    gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg && \
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
-    > /etc/apt/sources.list.d/google-chrome.list && \
-    apt-get update && apt-get install -y google-chrome-stable --no-install-recommends && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# ── 5. Google Chrome (稳定版) — amd64 only; arm64 用 Chromium
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | \
+        gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg && \
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
+        > /etc/apt/sources.list.d/google-chrome.list && \
+        apt-get update && apt-get install -y google-chrome-stable --no-install-recommends && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*; \
+    else \
+        apt-get update && apt-get install -y chromium-browser --no-install-recommends && \
+        ln -sf /usr/bin/chromium-browser /usr/bin/google-chrome-stable && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*; \
+    fi
 
 # ── 6. noVNC + websockify
 RUN git clone --depth=1 https://github.com/novnc/noVNC.git /opt/novnc && \

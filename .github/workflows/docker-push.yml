@@ -1,13 +1,33 @@
-# CI/CD: 构建并推送 Docker 镜像到 DockerHub
-# 触发条件: 推送 tag v* 到 main 分支
+# CI/CD: 构建并推送 Docker 多架构镜像到 DockerHub
+# 触发条件:
+#   1. docker/ backend/ scripts/ 等镜像相关文件变动时 (push to main)
+#   2. 手动触发 (workflow_dispatch)
+#   3. 打 docker-v* tag 时
 
 name: Docker Build & Push
 
 on:
   push:
+    branches: [main]
+    paths:
+      - 'docker/**'
+      - 'backend/**'
+      - 'scripts/**'
+      - 'seeds/**'
+      - 'frontend/**'
+      - 'docker-compose.yml'
     tags:
       - 'docker-v*'
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: '构建平台 (逗号分隔)'
+        required: false
+        default: 'linux/amd64,linux/arm64'
+      tag_suffix:
+        description: '额外 tag 后缀 (如 beta)'
+        required: false
+        default: ''
 
 env:
   IMAGE_NAME: womso/clawbox
@@ -19,6 +39,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up QEMU (多架构支持)
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -28,31 +51,55 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract version from tag
-        id: version
+      - name: Determine tags and platforms
+        id: meta
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-            echo "has_version=true" >> $GITHUB_OUTPUT
-          else
-            echo "version=latest" >> $GITHUB_OUTPUT
-            echo "has_version=false" >> $GITHUB_OUTPUT
+          PLATFORMS="${{ github.event.inputs.platforms || 'linux/amd64,linux/arm64' }}"
+          echo "platforms=${PLATFORMS}" >> $GITHUB_OUTPUT
+
+          # Base tags
+          TAGS="${{ env.IMAGE_NAME }}:latest"
+
+          # If triggered by a docker-v* tag, add version tag
+          if [[ "${{ github.ref }}" == refs/tags/docker-v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/docker-v}"
+            TAGS="${TAGS},${{ env.IMAGE_NAME }}:${VERSION}"
           fi
 
-      - name: Build and push (amd64)
-        uses: docker/build-push-action@v5
+          # If manual trigger with suffix
+          SUFFIX="${{ github.event.inputs.tag_suffix }}"
+          if [[ -n "$SUFFIX" ]]; then
+            TAGS="${TAGS},${{ env.IMAGE_NAME }}:${SUFFIX}"
+          fi
+
+          # Add git SHA short tag
+          SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          TAGS="${TAGS},${{ env.IMAGE_NAME }}:sha-${SHA}"
+
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "📦 Platforms: ${PLATFORMS}"
+          echo "🏷️ Tags: ${TAGS}"
+
+      - name: Build and push (multi-arch)
+        uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile.app
-          platforms: linux/amd64
+          file: docker/Dockerfile.base
+          platforms: ${{ steps.meta.outputs.platforms }}
           push: true
-          tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ steps.version.outputs.has_version == 'true' && format('{0}:{1}', env.IMAGE_NAME, steps.version.outputs.version) || '' }}
+          tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: false
 
-      # TODO: 后续添加 arm64 支持
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v3
-      # 然后在 platforms 加上 linux/arm64
+      - name: Summary
+        run: |
+          echo "## 🐳 Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Platforms:** \`${{ steps.meta.outputs.platforms }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          IFS=',' read -ra TAG_ARRAY <<< "${{ steps.meta.outputs.tags }}"
+          for tag in "${TAG_ARRAY[@]}"; do
+            echo "- \`${tag}\`" >> $GITHUB_STEP_SUMMARY
+          done
