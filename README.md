@@ -94,6 +94,7 @@ docker compose up -d
 | 浏览器 | Chrome + noVNC |
 | 网络 | Sing-box |
 | 容器 | Docker + Supervisord |
+| 启动器 | Tauri v2 (Rust + React/TypeScript) |
 
 ### 目录结构
 
@@ -101,9 +102,11 @@ docker compose up -d
 clawbox/
 ├── backend/          # FastAPI 后端
 ├── frontend/         # Vue 3 前端
+├── clawbox-launcher/ # 跨平台桌面启动器 (Tauri v2)
 ├── docker/           # Dockerfile + supervisord 配置
 ├── seeds/            # 种子配置文件（模板）
 ├── scripts/          # 启动脚本
+├── .github/workflows # CI/CD（启动器构建 + Docker 镜像构建）
 ├── docs/             # 文档
 ├── docker-compose.yml
 ├── .env.example      # 环境变量模板
@@ -144,6 +147,7 @@ ClawBox is a **one-click deployment panel** for AI automation enthusiasts. It pa
 - 🌐 **noVNC Remote Desktop** — Watch AI control Chrome in your browser
 - 📟 **Web Terminal** — Online xterm.js terminal for direct container access
 - 🛡️ **Network Isolation** — Sing-box routing to protect your real IP
+- 🚀 **Desktop Launcher** — Cross-platform GUI (Windows/macOS/Linux) with auto-update
 - 🔒 **Open Source** — Fully transparent code, no key stealing, no backdoors
 
 ### Quick Start
