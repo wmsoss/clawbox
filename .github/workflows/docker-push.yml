@@ -6,7 +6,7 @@ name: Docker Build & Push
 on:
   push:
     tags:
-      - 'v*'
+      - 'docker-v*'
   workflow_dispatch:
 
 env:
